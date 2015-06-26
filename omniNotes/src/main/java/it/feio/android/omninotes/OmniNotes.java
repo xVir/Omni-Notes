@@ -34,6 +34,7 @@ import org.acra.sender.HttpSender.Method;
 import org.acra.sender.HttpSender.Type;
 import org.piwik.sdk.Piwik;
 import org.piwik.sdk.Tracker;
+import com.appjolt.winback.Winback;
 
 import java.net.MalformedURLException;
 import java.util.Locale;
@@ -72,6 +73,9 @@ public class OmniNotes extends Application {
 
         // Analytics initialization
         getTracker();
+
+		// Appjolt - Init SDK
+		Winback.init(this);
     }
 
 

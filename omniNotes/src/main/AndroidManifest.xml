@@ -277,6 +277,34 @@
                 android:value="1" />
         </service>
 
+
+
+
+        <!-- Appjolt Activity -->
+        <activity android:name="com.appjolt.winback.AppjoltActivity"
+                  android:taskAffinity="com.appjolt.winback.twentyeight"
+                  android:configChanges="orientation|keyboardHidden|screenSize"
+                  android:hardwareAccelerated="false"
+                  android:theme="@android:style/Theme.Panel"  />
+
+        <!-- Appjolt Service -->
+        <service
+                android:name="com.appjolt.winback.WinbackService"
+                android:enabled="true"
+                android:process=":appjolt"
+                android:exported="true" />
+
+        <!-- Appjolt BOOT receiver -->
+        <receiver
+                android:name="com.appjolt.winback.WinbackBootReceiver"
+                android:enabled="true"
+                android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
