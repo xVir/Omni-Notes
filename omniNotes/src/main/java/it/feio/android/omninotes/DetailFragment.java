@@ -59,6 +59,9 @@ import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
 import android.widget.*;
+
+import ai.api.model.AIResponse;
+import ai.api.model.Result;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import com.afollestad.materialdialogs.DialogAction;
@@ -950,6 +953,10 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 		menu.findItem(R.id.menu_checklist_off).setVisible(noteTmp.isChecklist());
 		menu.findItem(R.id.menu_lock).setVisible(!noteTmp.isLocked());
 		menu.findItem(R.id.menu_unlock).setVisible(noteTmp.isLocked());
+
+		// voice commands always available
+		menu.findItem(R.id.menu_voiceCommand).setVisible(true);
+
 		// If note is trashed only this options will be available from menu
 		if (noteTmp.isTrashed()) {
 			menu.findItem(R.id.menu_untrash).setVisible(true);
@@ -1049,6 +1056,9 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 			case R.id.menu_delete:
 				deleteNote();
 				break;
+            case R.id.menu_voiceCommand:
+                mainActivity.startCommandListening();
+                break;
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -1059,8 +1069,89 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 		saveAndExit(this);
 	}
 
+    @Override
+    protected void processVoiceCommand(AIResponse aiResponse) {
+        Result result = aiResponse.getResult();
 
-	/**
+        switch (result.getAction()) {
+            case "add_attachments":
+                final String attachmentType = result.getStringParameter("attachments");
+                switch (attachmentType) {
+                    case "photo":
+                        takePhoto();
+                        break;
+
+                    case "video":
+                        takeVideo();
+                        break;
+
+                    case "file":
+                        attachFile();
+                        break;
+
+                    case "sketch":
+                        takeSketch(null);
+                        break;
+
+                    case "voice":
+                        break;
+
+                    case "location":
+                        setAddress();
+                        break;
+                }
+                break;
+
+            case "add_attachments_location":
+                setAddress();
+                break;
+
+            case "add_others":
+                break;
+
+            case "archive":
+                archiveNote(true);
+                break;
+
+            case "categorize":
+                categorizeNote();
+                break;
+
+            case "create_notes":
+                break;
+
+            case "discard":
+                discard();
+                break;
+
+            case "lock_notes":
+                lockNote();
+                break;
+
+            case "move_to_trash":
+                trashNote(true);
+                break;
+
+            case "search":
+                break;
+
+            case "share":
+                shareNote();
+                break;
+
+            case "sorting":
+                break;
+
+            case "unlock_notes":
+                lockUnlock();
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    /**
 	 *
 	 */
 	private void toggleChecklist() {
@@ -2241,12 +2332,7 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 					attachmentDialog.dismiss();
 					break;
 				case R.id.files:
-					Intent filesIntent;
-					filesIntent = new Intent(Intent.ACTION_GET_CONTENT);
-					filesIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-					filesIntent.addCategory(Intent.CATEGORY_OPENABLE);
-					filesIntent.setType("*/*");
-					startActivityForResult(filesIntent, FILES);
+                    attachFile();
 					attachmentDialog.dismiss();
 					break;
 				case R.id.sketch:
@@ -2269,8 +2355,17 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 		}
 	}
 
+    private void attachFile() {
+        Intent filesIntent;
+        filesIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        filesIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        filesIntent.addCategory(Intent.CATEGORY_OPENABLE);
+        filesIntent.setType("*/*");
+        startActivityForResult(filesIntent, FILES);
+    }
 
-	public void onEventMainThread(PushbulletReplyEvent pushbulletReplyEvent) {
+
+    public void onEventMainThread(PushbulletReplyEvent pushbulletReplyEvent) {
 		content.setText(getNoteContent() + System.getProperty("line.separator") + pushbulletReplyEvent.message);
 	}
 }

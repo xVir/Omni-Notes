@@ -352,4 +352,9 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
+
+    <!-- Voice Commands -->
+    <string name="voice_command">Voice Command</string>
+
+
 </resources>

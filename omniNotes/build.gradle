@@ -100,4 +100,7 @@ dependencies {
     compile 'it.feio.android:omninotes_commons:1.1.0-SNAPSHOT'
     compile 'it.feio.android:checklistview:2.2'
     compile 'it.feio.android:pixlUI:2.2'
+
+    compile 'ai.api:sdk:1.6.6@aar'
+
 }

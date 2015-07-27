@@ -42,6 +42,9 @@
         android:orderInCategory="400"
         android:title="@string/share"
         app:showAsAction="always"/>
+
+
+
     <item
         android:id="@+id/menu_checklist_on"
         android:icon="@drawable/ic_format_list_bulleted_white_48dp"
@@ -110,5 +113,13 @@
         android:orderInCategory="1000"
         android:title="@string/discard_changes"
         app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/menu_voiceCommand"
+        android:icon="@drawable/ic_action_apiai"
+        android:orderInCategory="1200"
+        android:title="@string/voice_command"
+        android:visible="false"
+        app:showAsAction="always"/>
 
 </menu>

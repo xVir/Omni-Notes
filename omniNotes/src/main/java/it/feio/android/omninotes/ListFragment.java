@@ -19,6 +19,7 @@ package it.feio.android.omninotes;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Context;
@@ -43,12 +44,19 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+
+import ai.api.model.AIResponse;
+import ai.api.model.Result;
+import ai.api.ui.AIDialog;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.neopixl.pixlui.components.textview.TextView;
 import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
 import com.pnikosis.materialishprogress.ProgressWheel;
+
+import org.apache.commons.lang.StringUtils;
+
 import de.greenrobot.event.EventBus;
 import de.keyboardsurfer.android.widget.crouton.Crouton;
 import de.keyboardsurfer.android.widget.crouton.Style;
@@ -129,6 +137,7 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
     private UndoBarController ubc;
     private Fab fab;
     private MainActivity mainActivity;
+    private AIDialog aiDialog;
 
 
     @Override
@@ -584,6 +593,8 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
             menu.findItem(R.id.menu_category).setVisible(true);
             menu.findItem(R.id.menu_tags).setVisible(true);
             menu.findItem(R.id.menu_trash).setVisible(true);
+            menu.findItem(R.id.menu_voiceCommand).setVisible(true);
+
         }
         menu.findItem(R.id.menu_select_all).setVisible(true);
 
@@ -673,6 +684,131 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
 		});
     }
 
+    @Override
+    protected void processVoiceCommand(AIResponse aiResponse) {
+        Result result = aiResponse.getResult();
+        final List<Note> selectedNotes = getSelectedNotes();
+
+        switch (result.getAction()) {
+
+            case "add_attachments":
+                break;
+
+            case "add_attachments_location":
+                break;
+
+            case "add_others":
+                break;
+
+            case "archive":
+                if (selectedNotes.size() > 0) {
+                    archiveNotes(true);
+                }
+                break;
+
+            case "categorize":
+                categorizeNotes();
+                break;
+
+            case "create_notes":
+                final String noteType = result.getStringParameter("new_notes");
+                final View v = mainActivity.findViewById(R.id.fab_note);
+                switch (noteType) {
+                    case "picture note":
+                        Intent i = mainActivity.getIntent();
+                        i.setAction(Constants.ACTION_TAKE_PHOTO);
+                        mainActivity.setIntent(i);
+                        editNote(new Note(), v);
+                        break;
+
+                    case "note":
+                    case "text note":
+                        editNote(new Note(), v);
+                        break;
+
+                    case "check list":
+                        Note note = new Note();
+                        note.setChecklist(true);
+                        editNote(note, v);
+                        break;
+                }
+                break;
+
+            case "discard":
+                break;
+
+            case "lock_notes":
+
+                break;
+
+            case "move_to_trash":
+
+                final String noteName = result.getStringParameter("new_notes");
+                if (StringUtils.isNotEmpty(noteName)) {
+                    Note noteToDelete = null;
+                    for (Note note : listAdapter.getNotes()) {
+                        if (note.getTitle().equalsIgnoreCase(noteName)) {
+                            noteToDelete = note;
+                            break;
+                        }
+                    }
+
+                    if (noteToDelete != null) {
+                        getSelectedNotes().clear();
+                        getSelectedNotes().add(noteToDelete);
+                        trashNotes(true);
+                    }
+
+                } else {
+                    if (selectedNotes.size() > 0) {
+                        trashNotes(true);
+                    }
+                }
+
+                break;
+
+            case "search":
+                final String searchWord = result.getStringParameter("any");
+                if (StringUtils.isNotEmpty(searchWord)) {
+                    MenuItemCompat.expandActionView(searchMenuItem);
+                    searchView.setQuery(searchWord, true);
+                }
+                break;
+
+            case "share":
+                if (selectedNotes.size() > 0) {
+                    share();
+                }
+                break;
+
+            case "sorting":
+
+                final String sortingOrder = result.getStringParameter("sorting_order");
+                switch (sortingOrder) {
+                    case "title":
+                        sortByColumn(0);
+                        break;
+                    case "creating date":
+                        sortByColumn(1);
+                        break;
+                    case "last modification date":
+                        sortByColumn(2);
+                        break;
+                    case "reminder date":
+                        sortByColumn(3);
+                        break;
+                }
+
+                break;
+
+            case "unlock_notes":
+                break;
+
+            default:
+                break;
+        }
+    }
+
 
     private void setActionItemsVisibility(Menu menu, boolean searchViewHasFocus) {
         // Defines the conditions to set actionbar items visible or not
@@ -704,6 +840,9 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
         menu.findItem(R.id.menu_contracted_view).setVisible(!drawerOpen && expandedView && !searchViewHasFocus);
         menu.findItem(R.id.menu_empty_trash).setVisible(!drawerOpen && navigationTrash);
         menu.findItem(R.id.menu_tags).setVisible(searchViewHasFocus);
+
+        menu.findItem(R.id.menu_voiceCommand).setVisible(!drawerOpen);
+
     }
 
 
@@ -757,6 +896,9 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
                 case R.id.menu_empty_trash:
                     emptyTrash();
                     break;
+                case R.id.menu_voiceCommand:
+                    mainActivity.startCommandListening();
+                    break;
             }
         } else {
             switch (item.getItemId()) {
@@ -789,6 +931,9 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
                     break;
                 case R.id.menu_select_all:
                     selectAllNotes();
+                    break;
+                case R.id.menu_voiceCommand:
+                    mainActivity.startCommandListening();
                     break;
 //                case R.id.menu_synchronize:
 //                    synchronizeSelectedNotes();
@@ -890,19 +1035,23 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
 
     }
 
-
     private void checkSortActionPerformed(MenuItem item) {
         if (item.getGroupId() == Constants.MENU_SORT_GROUP_ID) {
-            final String[] arrayDb = getResources().getStringArray(R.array.sortable_columns);
-            prefs.edit().putString(Constants.PREF_SORTING_COLUMN, arrayDb[item.getOrder()]).commit();
-            initNotesList(mainActivity.getIntent());
-            // Resets list scrolling position
-            listViewPositionOffset = 16;
-            listViewPosition = 0;
-            restoreListScrollPosition();
-            // Updates app widgets
-            BaseActivity.notifyAppWidgets(mainActivity);
+            int columnIndex = item.getOrder();
+            sortByColumn(columnIndex);
         }
+    }
+
+    private void sortByColumn(final int columnIndex) {
+        final String[] arrayDb = getResources().getStringArray(R.array.sortable_columns);
+        prefs.edit().putString(Constants.PREF_SORTING_COLUMN, arrayDb[columnIndex]).commit();
+        initNotesList(mainActivity.getIntent());
+        // Resets list scrolling position
+        listViewPositionOffset = 16;
+        listViewPosition = 0;
+        restoreListScrollPosition();
+        // Updates app widgets
+        BaseActivity.notifyAppWidgets(mainActivity);
     }
 
 
@@ -1096,6 +1245,7 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
     }
 
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void restoreListScrollPosition() {
         if (list.getCount() > listViewPosition) {
             list.setSelectionFromTop(listViewPosition, listViewPositionOffset);

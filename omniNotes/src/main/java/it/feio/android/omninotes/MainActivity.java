@@ -30,12 +30,18 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
+import android.text.AndroidCharacter;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.DatePicker;
 import android.widget.TimePicker;
 import android.widget.Toast;
+
+import ai.api.AIConfiguration;
+import ai.api.model.AIError;
+import ai.api.model.AIResponse;
+import ai.api.ui.AIDialog;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import de.greenrobot.event.EventBus;
@@ -70,6 +76,7 @@ public class MainActivity extends BaseActivity implements OnDateSetListener, OnT
     private FragmentManager mFragmentManager;
     public Uri sketchUri;
 
+    private AIDialog aiDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +92,8 @@ public class MainActivity extends BaseActivity implements OnDateSetListener, OnT
 		if (IntroActivity.mustRun(getApplicationContext())) {
 			startActivity(new Intent(this.getApplicationContext(), IntroActivity.class));
 		}
+
+        initVoiceCommands();
 
         new UpdaterTask(this).execute();
 
@@ -142,6 +151,51 @@ public class MainActivity extends BaseActivity implements OnDateSetListener, OnT
         handleIntents();
     }
 
+    private void initVoiceCommands() {
+        AIConfiguration aiConfiguration = new AIConfiguration(
+                "e4ce6aba653443368d3ad3fed87c95d7",
+                "cb9693af-85ce-4fbf-844a-5563722fc27f",
+                AIConfiguration.SupportedLanguages.English,
+                AIConfiguration.RecognitionEngine.System);
+        aiDialog = new AIDialog(this, aiConfiguration);
+        aiDialog.setResultsListener(new AIDialog.AIDialogListener() {
+            @Override
+            public void onResult(AIResponse aiResponse) {
+                Log.d("VoiceCommand", "onResult");
+
+                if (aiResponse != null) {
+                    processVoiceCommand(aiResponse);
+                }
+            }
+
+            @Override
+            public void onError(AIError aiError) {
+                Log.d("VoiceCommand", "onError");
+
+            }
+
+            @Override
+            public void onCancelled() {
+                Log.d("VoiceCommand", "onCancelled");
+            }
+        });
+
+
+
+    }
+
+    private void processVoiceCommand(final AIResponse aiResponse) {
+        final Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (currentFragment != null && currentFragment instanceof BaseFragment) {
+            ((BaseFragment)currentFragment).processVoiceCommand(aiResponse);
+        }
+    }
+
+    public void startCommandListening() {
+        if (aiDialog != null) {
+            aiDialog.showAndListen();
+        }
+    }
 
     @Override
     protected void onNewIntent(Intent intent) {
