@@ -1107,6 +1107,19 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
                 break;
 
             case "add_others":
+
+				final String type = result.getStringParameter("AddOthers");
+				switch (type) {
+					case "reminder":
+						break;
+					case "tag":
+						addTags();
+						break;
+					case "shortcut":
+						addShortcut();
+						break;
+				}
+
                 break;
 
             case "archive":

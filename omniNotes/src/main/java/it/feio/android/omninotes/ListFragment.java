@@ -137,7 +137,6 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
     private UndoBarController ubc;
     private Fab fab;
     private MainActivity mainActivity;
-    private AIDialog aiDialog;
 
 
     @Override
@@ -804,6 +803,30 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
             case "unlock_notes":
                 break;
 
+            case "empty":
+                if (StringUtils.isNotEmpty(result.getStringParameter("trash"))) {
+                    new MaterialDialog.Builder(mainActivity)
+                            .content(R.string.empty_trash_confirmation)
+                            .positiveText(R.string.ok)
+                            .callback(new MaterialDialog.ButtonCallback() {
+                                @Override
+                                public void onPositive(MaterialDialog materialDialog) {
+                                    // TODO do it with NoteProcessor
+                                    DbHelper.getInstance().emptyTrash();
+                                }
+                            }).build().show();
+                }
+                break;
+
+            case "restore":
+
+                if (StringUtils.isNotEmpty(result.getStringParameter("trash"))) {
+                    trashNotes(true);
+                } else if (StringUtils.isNotEmpty(result.getStringParameter("archive"))) {
+                    archiveNotes(false);
+                }
+
+                break;
             default:
                 break;
         }
