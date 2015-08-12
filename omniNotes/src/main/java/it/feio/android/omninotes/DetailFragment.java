@@ -20,6 +20,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DatePickerDialog.OnDateSetListener;
+import android.app.ProgressDialog;
 import android.app.TimePickerDialog.OnTimeSetListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -671,13 +672,7 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 
 		// Preparation for reminder icon
 		reminder_layout.setOnClickListener(v -> {
-			int pickerType = prefs.getBoolean("settings_simple_calendar", false) ? ReminderPickers.TYPE_AOSP :
-					ReminderPickers.TYPE_GOOGLE;
-			ReminderPickers reminderPicker = new ReminderPickers(mainActivity, mFragment, pickerType);
-			Long presetDateTime = noteTmp.getAlarm() != null ? Long.parseLong(noteTmp.getAlarm()) : null;
-			reminderPicker.pick(presetDateTime, noteTmp.getRecurrenceRule());
-			onDateSetListener = reminderPicker;
-			onTimeSetListener = reminderPicker;
+            addReminder();
 		});
 
 
@@ -727,8 +722,18 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 			lastModificationTextView.setVisibility(View.GONE);
 	}
 
+    private void addReminder() {
+        int pickerType = prefs.getBoolean("settings_simple_calendar", false) ? ReminderPickers.TYPE_AOSP :
+                ReminderPickers.TYPE_GOOGLE;
+        ReminderPickers reminderPicker = new ReminderPickers(mainActivity, mFragment, pickerType);
+        Long presetDateTime = noteTmp.getAlarm() != null ? Long.parseLong(noteTmp.getAlarm()) : null;
+        reminderPicker.pick(presetDateTime, noteTmp.getRecurrenceRule());
+        onDateSetListener = reminderPicker;
+        onTimeSetListener = reminderPicker;
+    }
 
-	private void removeAttachment(int position) {
+
+    private void removeAttachment(int position) {
 		noteTmp.removeAttachment(noteTmp.getAttachmentsList().get(position));
 		mAttachmentAdapter.getAttachmentsList().remove(position);
 	}
@@ -747,10 +752,10 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 		}
 		//When editor action is pressed focus is moved to last character in content field
 		title.setOnEditorActionListener((v, actionId, event) -> {
-			content.requestFocus();
-			content.setSelection(content.getText().length());
-			return false;
-		});
+            content.requestFocus();
+            content.setSelection(content.getText().length());
+            return false;
+        });
 		return title;
 	}
 
@@ -1094,6 +1099,9 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
                         break;
 
                     case "voice":
+                        if (!isRecording) {
+                            startRecordingWithDialog();
+                        }
                         break;
 
                     case "location":
@@ -1102,15 +1110,12 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
                 }
                 break;
 
-            case "add_attachments_location":
-                setAddress();
-                break;
-
             case "add_others":
 
 				final String type = result.getStringParameter("AddOthers");
 				switch (type) {
 					case "reminder":
+                        addReminder();
 						break;
 					case "tag":
 						addTags();
@@ -1162,6 +1167,30 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
             default:
                 break;
         }
+    }
+
+    private void startRecordingWithDialog() {
+        final ProgressDialog progressDialog = new ProgressDialog(getActivity());
+        progressDialog.setTitle("Recording");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setButton(ProgressDialog.BUTTON_POSITIVE, "Stop recording", (dialog, whichButton) -> {
+            progressDialog.dismiss();
+            isRecording = false;
+            stopRecording();
+            Attachment attachment = new Attachment(Uri.parse(recordName), Constants.MIME_TYPE_AUDIO);
+            attachment.setLength(audioRecordingTime);
+            addAttachment(attachment);
+            mAttachmentAdapter.notifyDataSetChanged();
+            mGridView.autoresize();
+        });
+
+        progressDialog.setOnCancelListener(p1 -> {
+            isRecording = false;
+            stopRecording();
+        });
+        isRecording = true;
+        startRecording();
+        progressDialog.show();
     }
 
     /**

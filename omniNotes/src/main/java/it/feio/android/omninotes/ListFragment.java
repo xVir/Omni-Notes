@@ -693,9 +693,6 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
             case "add_attachments":
                 break;
 
-            case "add_attachments_location":
-                break;
-
             case "add_others":
                 break;
 
@@ -803,19 +800,23 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
             case "unlock_notes":
                 break;
 
-            case "empty":
-                if (StringUtils.isNotEmpty(result.getStringParameter("trash"))) {
-                    new MaterialDialog.Builder(mainActivity)
-                            .content(R.string.empty_trash_confirmation)
-                            .positiveText(R.string.ok)
-                            .callback(new MaterialDialog.ButtonCallback() {
-                                @Override
-                                public void onPositive(MaterialDialog materialDialog) {
-                                    // TODO do it with NoteProcessor
-                                    DbHelper.getInstance().emptyTrash();
-                                }
-                            }).build().show();
-                }
+            case "empty_trash":
+                new MaterialDialog.Builder(mainActivity)
+                        .content(R.string.empty_trash_confirmation)
+                        .positiveText(R.string.ok)
+                        .callback(new MaterialDialog.ButtonCallback() {
+                            @Override
+                            public void onPositive(MaterialDialog materialDialog) {
+                                final AsyncTask emptyTrashTask = new AsyncTask<Void, Void, Void>() {
+                                    @Override
+                                    protected Void doInBackground(Void... voids) {
+                                        DbHelper.getInstance().emptyTrash();
+                                        return null;
+                                    }
+                                };
+                                emptyTrashTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                            }
+                        }).build().show();
                 break;
 
             case "restore":
