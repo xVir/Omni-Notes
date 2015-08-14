@@ -821,9 +821,10 @@ public class ListFragment extends BaseFragment implements OnViewTouchedListener,
 
             case "restore":
 
-                if (StringUtils.isNotEmpty(result.getStringParameter("trash"))) {
-                    trashNotes(true);
-                } else if (StringUtils.isNotEmpty(result.getStringParameter("archive"))) {
+                final String restoreTarget = result.getStringParameter("RestoreTarget");
+                if (StringUtils.isEmpty(restoreTarget) || "trash".equalsIgnoreCase(restoreTarget)) {
+                    trashNotes(false);
+                } else if ("archive".equalsIgnoreCase(restoreTarget)) {
                     archiveNotes(false);
                 }
 
