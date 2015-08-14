@@ -86,8 +86,10 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import ai.api.model.AIResponse;
@@ -755,10 +757,14 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 	}
 
     private void addReminder() {
+        Long presetDateTime = noteTmp.getAlarm() != null ? Long.parseLong(noteTmp.getAlarm()) : null;
+        addReminder(presetDateTime);
+    }
+
+    private void addReminder(Long presetDateTime) {
         int pickerType = prefs.getBoolean("settings_simple_calendar", false) ? ReminderPickers.TYPE_AOSP :
                 ReminderPickers.TYPE_GOOGLE;
         ReminderPickers reminderPicker = new ReminderPickers(mainActivity, mFragment, pickerType);
-        Long presetDateTime = noteTmp.getAlarm() != null ? Long.parseLong(noteTmp.getAlarm()) : null;
         reminderPicker.pick(presetDateTime, noteTmp.getRecurrenceRule());
         onDateSetListener = reminderPicker;
         onTimeSetListener = reminderPicker;
@@ -1147,7 +1153,7 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 				final String type = result.getStringParameter("AddOthers");
 				switch (type) {
 					case "reminder":
-                        addReminder();
+                        addReminderFromAIResult(result);
 						break;
 					case "tag":
 						addTags();
@@ -1209,6 +1215,21 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
             default:
                 break;
         }
+    }
+
+    private void addReminderFromAIResult(Result result) {
+        try {
+            final Date reminderDate = result.getDateParameter("date");
+            if (reminderDate != null) {
+                Long reminderDateTime = reminderDate.getTime();
+                addReminder(reminderDateTime);
+                return;
+            }
+        } catch (ParseException e) {
+            Log.e(Constants.TAG, "Parse date parameter failed");
+        }
+
+        addReminder();
     }
 
     private void startRecordingWithDialog() {
